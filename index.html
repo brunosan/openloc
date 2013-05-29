@@ -15,14 +15,18 @@
 <div id='map'></div>
 <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
 <script>
-url="http://latitude.google.com/latitude/apps/badge/api?user=6189641816453916018&type=jsonp";
-$.getJSON(url, function (json) {
-    alert(json.result);
-    $.each(json.list, function (i, fb) {
-        alert(fb.result);
-    });
-});
+url="http://latitude.google.com/latitude/apps/badge/api?user=6189641816453916018&type=json";
 
+var googleURL = url;
+$.getJSON('http://query.yahooapis.com/v1/public/yql?callback=?', {
+    q: 'select * from json where url="'+googleURL+'"',
+    format: 'json'
+}, function(data) {
+    if(data.query.count){
+        var gData = data.query.results.json;
+        console.log(gData);
+    }
+});
 
 
 
