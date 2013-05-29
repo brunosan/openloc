@@ -1,20 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src='http://api.tiles.mapbox.com/mapbox.js/v1.0.2/mapbox.js'></script>
-  <link href='http://api.tiles.mapbox.com/mapbox.js/v1.0.2/mapbox.css' rel='stylesheet' />
-  <!--[if lte IE 8]>
-    <link href='http://api.tiles.mapbox.com/mapbox.js/v1.0.2/mapbox.ie.css' rel='stylesheet' >
-  <![endif]-->
+  <script src='http://api.tiles.mapbox.com/mapbox.js/v0.6.7/mapbox.js'></script>
+  <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+  <link href='http://api.tiles.mapbox.com/mapbox.js/v0.6.7/mapbox.css' rel='stylesheet' />
   <style>
     body { margin:0; padding:0; }
     #map { position:absolute; top:0; bottom:0; width:100%; }
   </style>
 </head>
 <body>
-<div id='map'></div>
-<script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+<style>
+    #map {
+        position:absolute;
+        width:100%;
+        height:100%;
+        top:0;
+        left:0;
+        pointer-events: all; cursor: none}
+    #zoommap {
+        width:200px;
+        height:200px;
+        background:beige;
+        transform: rotate(-60deg);
+        -webkit-transform: rotate(-60deg);
+        -moz-transform: rotate(-60deg);
+        -ms-transform: rotate(-60deg);
+        -o-transform: rotate(-60deg);
+    }
+    #zoomlense {
+        overflow: visible;
+        top: -9999px;
+        left: -9999px;
+    }
+    #border {
+        margin:-5px;
+        border:#888 solid 5px;
+        border-radius:50%;
+        box-shadow:0px 0px 10px #888;
+    }
+    .overlay {
+        position:absolute;
+        pointer-events:none;
+        overflow:hidden;
+        width:200px;
+        height:200px;
+    }
+    .rotater {
+        transform:rotate(30deg);
+        -webkit-transform:rotate(30deg);
+        -moz-transform:rotate(30deg);
+        -ms-transform:rotate(30deg);
+        -o-transform:rotate(30deg);
+    }
+  </style>
+</head>
+<body>
+  <div id='map'></div>
+  <div id='zoomlense' class='overlay'>
+  <div class='overlay rotater'>
+    <div class='overlay rotater'>
+      <div id='zoommap' class='overlay'></div>
+    </div>
+  </div>
+  <div id='border' class='overlay'></div>
+</div>
 <script>
+
 url="http://latitude.google.com/latitude/apps/badge/api?user=6189641816453916018&type=json";
 
 var googleURL = url;
@@ -25,36 +77,88 @@ $.getJSON('http://query.yahooapis.com/v1/public/yql?callback=?', {
 }, function(data) {
     if(data.query.count){
         var gData = data.query.results.json;
-        lat=gData.features.geometry.coordinates[0];
-        lon=gData.features.geometry.coordinates[1];
-		console.log(lon,lat);
+        lon=gData.features.geometry.coordinates[0];
+        lat=gData.features.geometry.coordinates[1];
+		console.log(lat,lon);
 		drawMap();
     }
 });
 
 function drawMap(){
-var map = L.mapbox.map('map', 'examples.map-20v6611k')
-    .setView([lon, lat], 6);
+  mapbox.load([
+    'http://a.tiles.mapbox.com/v3/brunosan.map-druudl3x.jsonp',
+    'http://a.tiles.mapbox.com/v3/examples.map-4l7djmvo.jsonp'
+    ], function(tj) {
+      // The main map with the first defined layer.
+      var map = mapbox.map('map', tj[0].layer);
+      // Create a smaller map with the second defined layer (with color)
+      // and no handlers ([])
+      var zoommap = mapbox.map('zoommap', tj[1].layer, null, []);
+      var zl = document.getElementById('zoomlense');
 
-L.mapbox.markerLayer({
-    // this feature is in the GeoJSON format: see geojson.org
-    // for the full specification
-    type: 'Feature',
-    geometry: {
-        type: 'Point',
-        // coordinates here are in longitude, latitude order because
-        // x, y is the standard for GeoJSON and many formats
-        coordinates: [lat,lon]
-    },
-    properties: {
-        title: 'A Single Marker',
-        description: 'Just one of me',
-        // one can customize markers by adding simplestyle properties
-        // http://mapbox.com/developers/simplestyle/
-        'marker-size': 'large',
-        'marker-color': '#f0a'
-    }
-}).addTo(map);
+      map.addCallback('panned', update);
+      map.addCallback('zoomed', update);
+      map.parent.onmousemove = update;
+
+
+	  var markerLayer = mapbox.markers.layer();
+	  var markerLayer2 = mapbox.markers.layer();
+	  map.addLayer(markerLayer2);
+	  zoommap.addLayer(markerLayer);
+	  
+	markerLayer.add_feature({
+	      geometry: {
+	          // The order of coordinates here is lon, lat. This is because
+	          // we use the GeoJSON specification for all marker features.
+	          // (lon, lat is also the internal order of KML and other geographic formats)
+	          coordinates: [lon ,lat]
+	      },
+	      properties: {
+	          // these properties customize the look of the marker
+	          // see the simplestyle-spec for a full reference:
+	          // https://github.com/mapbox/simplestyle-spec
+	          'marker-color': '#000',
+	          'marker-symbol': 'star-stroked',
+	          title: 'Last known position',
+	          description: 'based on mobile phone and connectivity'
+	      }
+	  });
+	 markerLayer2.add_feature({
+	      geometry: {
+	          // The order of coordinates here is lon, lat. This is because
+	          // we use the GeoJSON specification for all marker features.
+	          // (lon, lat is also the internal order of KML and other geographic formats)
+	          coordinates: [lon ,lat]
+	      },
+	      properties: {
+	          // these properties customize the look of the marker
+	          // see the simplestyle-spec for a full reference:
+	          // https://github.com/mapbox/simplestyle-spec
+	          'marker-color': '#000',
+	          'marker-symbol': 'star-stroked',
+	          title: 'Last known position',
+	          description: 'based on mobile phone and connectivity'
+	      }
+	  });
+	
+      // On map or mouse movement, set the center of the loupe to
+      // be the position under the mouse
+      function update(e) {
+        var point = MM.getMousePoint(e, map);
+        zl.style.top = point.y - 100 + 'px';
+        zl.style.left = point.x - 100 + 'px';
+        // Using coordinates instead of the projected latitude / longitude
+        // avoids the cost of projecting and unprojecting
+        zoommap.coordinate = map.pointCoordinate(point).zoomTo(map.zoom() +  3);
+        MM.getFrame(zoommap.getRedraw());
+      }
+
+      map.centerzoom({ lat: lat, lon: lon}, 10);
+
+      // Attribute map
+      map.ui.attribution.add()
+          .content('<a href="http://mapbox.com/about/maps">Terms &amp; Feedback</a>');
+    });
 }
 </script>
 </body>
