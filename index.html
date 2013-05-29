@@ -18,20 +18,23 @@
 url="http://latitude.google.com/latitude/apps/badge/api?user=6189641816453916018&type=json";
 
 var googleURL = url;
+var lat,lon,loc,time,marker;
 $.getJSON('http://query.yahooapis.com/v1/public/yql?callback=?', {
     q: 'select * from json where url="'+googleURL+'"',
     format: 'json'
 }, function(data) {
     if(data.query.count){
         var gData = data.query.results.json;
-        console.log(gData);
+        lat=gData.features.geometry.coordinates[0];
+        lon=gData.features.geometry.coordinates[1];
+		console.log(lon,lat);
+		drawMap();
     }
 });
 
-
-
+function drawMap(){
 var map = L.mapbox.map('map', 'examples.map-20v6611k')
-    .setView([37.9, -77], 6);
+    .setView([lon, lat], 6);
 
 L.mapbox.markerLayer({
     // this feature is in the GeoJSON format: see geojson.org
@@ -41,7 +44,7 @@ L.mapbox.markerLayer({
         type: 'Point',
         // coordinates here are in longitude, latitude order because
         // x, y is the standard for GeoJSON and many formats
-        coordinates: [-77, 37.9]
+        coordinates: [lat,lon]
     },
     properties: {
         title: 'A Single Marker',
@@ -52,6 +55,7 @@ L.mapbox.markerLayer({
         'marker-color': '#f0a'
     }
 }).addTo(map);
+}
 </script>
 </body>
 </html>
